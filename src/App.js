@@ -1,25 +1,64 @@
-import logo from './logo.svg';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  MinusSquareOutlined,
+  ArrowsAltOutlined,
+  ShrinkOutlined,
+  EyeInvisibleTwoTone,
+  EyeTwoTone,
+  CodeOutlined
+} from "@ant-design/icons";
+import { message, Layout, Card, Input, Button, Tabs, Space  } from "antd";
+
+import { ipcasync, setSchedule, puppeteer, opendevtool } from "./utils";
+
+import { default as ConfigIndex } from './pages/config/index';
+import { default as AccountIndex } from './pages/account/index';
+
 import './App.css';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
-}
+const APP = () => {
+  const [tabKey, setTabKey] = useState('config');
+  const [ipInfo, setIpInfo] = useState('');
 
-export default App;
+  const fetchIp = useCallback(() => {
+    fetch('/tools/MeasureApi.ashx?action=EAPI&secret=3C3935C58989D82AFA4C2173A3798E030254C3E22BD7FAB635EDC57B5666B886C5EA5A1CF7E6331E&number=1&orderId=SH20220602161248960_test&format=json', {
+      method: 'GET'
+    }).then(res => {
+      return res.json();
+    }).then(res => {
+      // 206: ip数量用完 203: 需要添加白名单 406：提取间隔太快 215：单次提取数量超过上限
+      const { status, left_time, domain, number, data = [] } = res;
+      if (status === 'success') {
+        setIpInfo(data[0])
+      }
+    })
+  }, []);
+
+  useEffect(() => {
+    fetchIp();
+  }, [fetchIp]);
+
+  return (
+    <Layout id="layout">
+      <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
+        <Tabs activeKey={tabKey} onChange={setTabKey} type='card' >
+          <Tabs.TabPane tab="配置" key="config">
+            <ConfigIndex />
+            <CodeOutlined onClick={opendevtool} title="控制台"/>
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="账号" key="account">
+            <AccountIndex setTabKey={setTabKey} ip={ipInfo.IP}/>
+          </Tabs.TabPane>
+        </Tabs>
+      </Card>
+      <Layout.Footer>
+        <Space>
+          <div>当前代理：{ipInfo.IP}</div>
+          <Button onClick={() => {fetchIp()}}>重置代理</Button>
+        </Space>
+      </Layout.Footer>
+    </Layout>
+  );
+};
+
+export default APP;

@@ -1,0 +1,8 @@
+.account_table .ant-pagination-item {
+    display: flex;
+    align-items: center;
+}
+.account_table .ant-pagination-item-link {
+    display: flex !important;
+    align-items: center;
+}

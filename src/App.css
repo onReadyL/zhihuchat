@@ -1,38 +1,32 @@
-.App {
-  text-align: center;
+#layout {
+  height: 100%;
+  background-color: #f7f7f7;
+}
+.tools_card{
+  height: 100% !important;
+  margin: 10px !important;
+  background-color: #fff !important;
+}
+.tools_card > .ant-tabs-card .ant-tabs-content {
+  height: 120px;
+  margin-top: -16px;
+}
+.tools_card > .ant-tabs-card .ant-tabs-content > .ant-tabs-tabpane {
+  padding: 16px;
+  background: #fff;
+}
+.tools_card > .ant-tabs-card > .ant-tabs-nav::before {
+  display: none;
+}
+.tools_card > .ant-tabs-card .ant-tabs-tab {
+  background: transparent;
+  border-color: transparent;
+}
+.tools_card > .ant-tabs-card .ant-tabs-tab-active {
+  background: #fff;
+  border-color: #fff;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
-  }
-}
-
-.App-header {
-  background-color: #282c34;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: white;
-}
-
-.App-link {
-  color: #61dafb;
-}
-
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.tools_card .ant-tabs-content-holder {
+  padding: 0 5px;
 }

@@ -4,7 +4,8 @@
 /node_modules
 /.pnp
 .pnp.js
-
+/Chrome
+/release
 # testing
 /coverage
 
