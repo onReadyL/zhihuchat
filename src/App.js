@@ -1,22 +1,18 @@
 import React, { useState, useEffect, useCallback } from "react";
-import {
-  MinusSquareOutlined,
-  ArrowsAltOutlined,
-  ShrinkOutlined,
-  EyeInvisibleTwoTone,
-  EyeTwoTone,
-  CodeOutlined
-} from "@ant-design/icons";
-import { message, Layout, Card, Input, Button, Tabs, Space  } from "antd";
+import { CodeOutlined } from "@ant-design/icons";
+import { Layout, Card, Button, Tabs, Space } from "antd";
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
 
-import { ipcasync, setSchedule, puppeteer, opendevtool } from "./utils";
+import { receiveData } from './action';
+import { opendevtool } from "./utils";
 
 import { default as ConfigIndex } from './pages/config/index';
 import { default as AccountIndex } from './pages/account/index';
 
 import './App.css';
 
-const APP = () => {
+const APP = ({ receiveData, auth, }) => {
   const [tabKey, setTabKey] = useState('config');
   const [ipInfo, setIpInfo] = useState('');
 
@@ -38,16 +34,20 @@ const APP = () => {
     fetchIp();
   }, [fetchIp]);
 
+  // useEffect(() => {
+  //   receiveData({ key: 1}, 'auth')
+  // }, [])
+
   return (
     <Layout id="layout">
       <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
         <Tabs activeKey={tabKey} onChange={setTabKey} type='card' >
+          <Tabs.TabPane tab="账号" key="account">
+            <AccountIndex setTabKey={setTabKey} ip={ipInfo.IP}/>
+          </Tabs.TabPane>
           <Tabs.TabPane tab="配置" key="config">
             <ConfigIndex />
             <CodeOutlined onClick={opendevtool} title="控制台"/>
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="账号" key="account">
-            <AccountIndex setTabKey={setTabKey} ip={ipInfo.IP}/>
           </Tabs.TabPane>
         </Tabs>
       </Card>
@@ -61,4 +61,12 @@ const APP = () => {
   );
 };
 
-export default APP;
+const mapStateToProps = (state) => {
+  const { auth = { data: {} } } = state.httpData;
+  return { auth };
+};
+const mapDispatchToProps = (dispatch) => ({
+  receiveData: bindActionCreators(receiveData, dispatch),
+});
+
+export default connect(mapStateToProps, mapDispatchToProps)(APP);

@@ -16,7 +16,7 @@ const Hand = async () => {
   //当electron完成初始化后触发init-day-data
   mainWindow = new BrowserWindow({
     show: false,
-    width: 800,
+    width: 1000,
     height: 650,
     resizable: false,
     // frame: false, //无边框
