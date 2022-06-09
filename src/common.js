@@ -12,6 +12,9 @@ export const chromeRemoteInterface = window.require('chrome-remote-interface');
 export const Version = window.require('chrome-remote-interface').Version;
 export const path = window.require('path');
 
+const Store = window.require('electron-store');
+export const store = new Store(); // 创建实例
+
 export const ipcasync = async (name, obj = null) => {
   ipcRenderer.send(name, obj);
   return await new Promise(resolve => {

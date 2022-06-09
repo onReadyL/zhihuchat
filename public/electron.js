@@ -8,6 +8,10 @@ const {
   screen,
 } = require("electron");
 
+const Store = require('electron-store');
+// 初始化
+Store.initRenderer();
+
 const isDev = process.env.NODE_ENV === "development";
 
 let mainWindow = null;

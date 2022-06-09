@@ -1,18 +1,21 @@
 import React, { useState } from "react";
 import { Form, Input, InputNumber } from 'antd';
+
 import { FilePathCheck } from '../../components/index';
+import { dafault_count } from '../../constants/index';
+import { store } from '../../common';
 
 const Config = () => {
 
-    const [toolsCofig, setToolsCofig] = useState(JSON.parse(localStorage.getItem('tools_config') || '{}'));
+    const [toolsCofig, setToolsCofig] = useState(store.get('tools_config', {}));
 
     const [form] = Form.useForm();
 
     const handleValidateFields = () => {
         form.validateFields().then((values) => {
-            localStorage.setItem("tools_config", JSON.stringify(values));
-        }).catch(errorInfo => {
-            
+            store.set('tools_config', values);
+        }).catch(({ values }) => {
+            store.set('tools_config', values);
         })
     };
 
@@ -63,7 +66,7 @@ const Config = () => {
             <Form.Item
                 name="count"
                 label="私信条数"
-                initialValue={50}
+                initialValue={dafault_count}
                 rules={[
                     {
                         required: true,
@@ -71,11 +74,30 @@ const Config = () => {
                     },
                 ]}
             >
-                <InputNumber onBlur={handleValidateFields} />
+                <InputNumber placeholder="请输入私信条数，默认20" min={1} onBlur={handleValidateFields} />
+            </Form.Item>
+            <Form.Item
+                name="chat_interval"
+                label="私信间隔"
+                rules={[
+                    {
+                        required: true,
+                        message: '必填'
+                    },
+                ]}
+            >
+                <InputNumber onBlur={handleValidateFields} min={1} addonAfter="秒" />
             </Form.Item>
             <Form.Item
                 name="text"
                 label="私信文本"
+                rules={[
+                    {
+                        required: true,
+                        whitespace: true,
+                        message: '必填'
+                    },
+                ]}
             >
                 <Input.TextArea showCount={true} autoSize={{ maxRows: 5, minRows: 5 }} onBlur={handleValidateFields} />
             </Form.Item>

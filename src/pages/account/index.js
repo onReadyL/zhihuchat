@@ -1,16 +1,25 @@
-import React, { useCallback, useEffect, useState } from "react";
-import { Form, Input, Button, Table, message, Modal, Checkbox, Select, Space } from 'antd';
+import React, { useEffect, useState } from "react";
+import { Form, Input, Button, Table, message, Modal, Checkbox, Select, Space, notification } from 'antd';
+import { nanoid } from 'nanoid';
+import moment from "moment";
 
-import { puppeteer, child_process, chromeRemoteInterface, Version, waitFor } from '../../utils';
+import { dafault_count } from '../../constants/index';
+import { puppeteer, child_process, chromeRemoteInterface, Version, waitFor, store } from '../../common';
+import { login, testAccount } from '../utils/index';
+
 import './index.css';
 
-const groups = [{ value: '1', label:'一组'}, { value: '2', label: '二组'}, { value: '3', label: '三组'}, { value: '4', label: '四组'}]
-
-const Index = ({ setTabKey, ip }) => {
+const Index = ({ ip }) => {
 
     const [visible, setVisible] = useState(false);
 
-    const [dataSource, setDataSource] = useState(JSON.parse(localStorage.getItem('tools_dataSource') || '[]'));
+    const [dataSource, setDataSource] = useState(store.get('tools_dataSource', [])); // 账号数据
+    
+    store.onDidChange('tools_dataSource', (newValue, oldValue) => {
+        setDataSource(newValue || []);
+    })
+
+    const [selectedRowKeys, setSelectedRowKeys] = useState(store.get('tools_dataSource_selected', []).map(item => item.id)); // 选中
 
     const [pageNo, setPageNo] = useState(1);
 
@@ -23,18 +32,44 @@ const Index = ({ setTabKey, ip }) => {
         bool: false
     });
 
-    const begin = async (values, isLast) => {
-        const { account, password, agent = false, group } = values;
+    const next = () => {
+        const nextIndex = dataIndex + 1;
+        if (nextIndex > dataSource.length) {
+            setDataIndex();
+        } else {
+            setDataIndex(nextIndex)
+        }
+    }
+
+    // 是否有正在运行的账号
+    const isLoading = dataSource.some(item => item.loading);
+
+    const begin = async () => {
+        if (!dataIndex) {
+            return
+        }
+        const { account, password, agent = false, group, chat_interval } = dataSource[dataIndex - 1];
 
         /** 配置 */
-        const { path, url, count, text } = JSON.parse(localStorage.getItem("tools_config") || '{}');
+        const { path, url, count, text } = store.get('tools_config', {});
+
         if (!path) {
-            message.info("请先配置本地chrome路径");
-            setTimeout(() => {
-                setTabKey('config');
-            }, 1500);
+            setDataIndex();
+            notification.warn({
+                message: '配置错误',
+                description: '未配置chrome地址'
+            });
             return;
         };
+        if (!text) {
+            setDataIndex();
+            notification.warn({
+                message: '配置错误',
+                description: '未配置私信文本'
+            });
+            return;
+        }
+
         let childProcess;
 
         /** 启动本地chrome 并进入知乎 */
@@ -61,14 +96,33 @@ const Index = ({ setTabKey, ip }) => {
                 await Network.enable();
                 await Page.enable();
 
-                const isLogined = await Network.getCookies({ urls: ['https://zhuanlan.zhihu.com/'] }).then(res => {
+                const isLogined = await Network.getCookies({ urls: ['https://zhuanlan.zhihu.com/'] }).then(res => { 
                     return res.cookies.filter(item => item.name === 'z_c0').length;
                 });
 
                 if (!isLogined) {
-                    message.warning('未登录');
                     setDataIndex();
+                    notification.warn({ message: '请登录', description: '登录后关闭浏览器重新开始（请勿登录其他账号）' });
+                    setDataSource((prev) => {
+                        return prev.map((item, index) => {
+                            if (index === dataIndex - 1) {
+                                return { ...item, status: 2 }
+                            } else {
+                                return item
+                            }
+                        })
+                    })
                     return;
+                } else {
+                    setDataSource((prev) => {
+                        return prev.map((item, index) => {
+                            if (index === dataIndex - 1) {
+                                return { ...item, status: 10 }
+                            } else {
+                                return item
+                            }
+                        })
+                    })
                 }
 
                 // 获取webSocketDebuggerUrl
@@ -87,9 +141,7 @@ const Index = ({ setTabKey, ip }) => {
                     });
 
                     await browser.on("disconnected", async () => {
-                        // setDataIndex((prev) => {
-                        //     return prev + 1;
-                        // });
+                       
                     })
 
                     await browser.on('targetcreated', async (target) => {
@@ -112,28 +164,47 @@ const Index = ({ setTabKey, ip }) => {
 
                     const [page1] = await browser.pages();
 
-                    let isVoters;
-                    try {
-                        isVoters = await page1.waitForSelector(".Voters", { timeout: 30000 }).then(res => {
+                    // todo: 可能存在网络错误
+                    await page1.content();
+                    
+                    //  notification.warn({
+                    //         message: '网络错误',
+                    //         description: "请检查网络状况或稍后重试"
+                    //     });
+
+                    const isVoters = await page1.waitForSelector(".Voters", { timeout: 10000 }).then(res => {
                             return !!res;
-                        });
-                    } catch (error) {
-                        console.log(error)
-                        message.info('请检查网络问题或稍后重试');
-                        setDataIndex();
-                        await browser.close();
-                        return;
-                    }
+                        }).catch(err => {
+                            return false;
+                        })
                     
                     if (!isVoters) {
-                        message.info('当前文章无人点赞！');
+                        notification.warn({
+                            message: '操作错误',
+                            description: '当前文章无人点赞'
+                        });
                         await browser.close();
                         setDataIndex()
                         return;
                     }
 
-                    await page1.waitForSelector('.Voters > button', { timeout: 3000 }).then(res => res.click({ delay: 500 }));
-                    await page1.waitForSelector('.VoterList > .VoterList-content .List-item', { timeout: 10000 });
+                    // TODO: 点不开，导致下一句超时
+                    await page1.waitForSelector('.Voters > button', { timeout: 10000 }).then(res => res.click({ delay: 500 })).catch(err => {
+                        console.log(err);
+                    });
+
+                    const isListItems = await page1.waitForSelector('.VoterList > .VoterList-content .List-item', { timeout: 10000 }).catch(res => { return false });
+                    
+                    if (!isListItems) {
+                        notification.warn({
+                            message: '系统错误',
+                            description: '请联系管理员'
+                        });
+                        await browser.close();
+                        setDataIndex()
+                        return;
+                    }
+
                     const voterContent = await page1.waitForSelector('.VoterList > .VoterList-content');
                     // 滚动加载
                     await waitFor(1000);
@@ -165,13 +236,17 @@ const Index = ({ setTabKey, ip }) => {
                         
                     }
 
-                    const total = postCount < count ? postCount : count;
+                    // 私信条数
+                    const tempCount = count || dafault_count;
+
+                    const total = postCount < tempCount ? postCount : tempCount;
+
                     const voterList = await voterContent.$$('.List-item');
                     
                     /** 循环点击赞同列表并发私信 */
                     try {
                         for (let i = 0; i < total; i++) {
-                            await waitFor(1000); // 间隔时间
+                            await waitFor(chat_interval * 1000); // 间隔时间
                             await voterList[i].$('.ContentItem .ContentItem-main .ContentItem-head .UserLink').then(res => res.click()); // 打开新页面，brower.on('targetcreated')监听到
                             
                             await page1.mouse.move(0, 0); // 移动鼠标
@@ -212,15 +287,13 @@ const Index = ({ setTabKey, ip }) => {
                             }
 
                             const textarea = await newPage.waitForSelector('.ChatBoxModal textarea', { timeout: 5000 });
-                            await textarea.type(text, { delay: 1000 });
+                            await textarea.type(text || '', { delay: 1000 });
                             await waitFor(1000);
                             await newPage.$(".InputBox-sendBtn").then(res => res.click());
                         }
                         await waitFor(2000);
                         await browser.close();
-                        setDataIndex((prev) => {
-                            return prev + 1;
-                        });
+                        next()
                     } catch (error) {
                         console.log(error)
                         setDataIndex();
@@ -238,26 +311,24 @@ const Index = ({ setTabKey, ip }) => {
 
         await conecctChrome();
     }
-    
-    const handleBegin = useCallback(async () => {
-        if (dataIndex && dataIndex <= dataSource.length) {
-            await begin(dataSource[dataIndex - 1]);
+
+    // 控制数据loading状态
+    useEffect(() => {
+        if (dataIndex) {
             setDataSource(prev => {
                 return prev.map((item, index) => {
                     return { ...item, loading: index === dataIndex - 1}
                 })
             })
+            setTimeout(() => {
+                begin();
+            }, 0)
         } else {
-            setDataIndex();
             setDataSource((prev) => {
                 return prev.map(item => ({...item, loading: false }))
             })
         }
      }, [dataIndex]);
-
-    useEffect(() => {
-        handleBegin();
-    }, [handleBegin])
    
 
     /** 确定添加账号 */
@@ -267,35 +338,56 @@ const Index = ({ setTabKey, ip }) => {
             if (isEdit.bool) {
                 tempValues = dataSource.map((item, index) => {
                     if (isEdit.index - 1 === index) {
-                        return values;
+                        return {...item, ...values};
                     } else {
                         return item
                     }
                 })
             } else {
-                tempValues = [...dataSource, values];
+                const isExsit = dataSource.find(item => item.account === values.account);
+                if (!!isExsit) {
+                    return notification.warn({
+                        message: '操作错误',
+                        description: '该账号已存在'
+                    })
+                }
+                tempValues = [...dataSource, {...values, id: nanoid(10), status: 1, createTime: moment().format('YYYY-MM-DD') }];
             }
-
-            localStorage.setItem('tools_dataSource', JSON.stringify(tempValues));
-            setDataSource(tempValues);
+            store.set('tools_dataSource', tempValues);
+            // setDataSource(tempValues);
             form.resetFields();
             setIsEdit((prev) => ({ ...prev, bool: false }));
             setVisible(false);
         })
     }
 
+    /** 清空账号 */
+    const clearAccount = () => {
+        // setDataSource([]);
+        store.delete("tools_dataSource");
+    }
+
     /** 删除账号 */
     const handleDelete = (index) => {
         const temDataSource = dataSource.filter((item, i) => i + 1 !== index);
-        localStorage.setItem('tools_dataSource', JSON.stringify(temDataSource));
-        setDataSource(temDataSource);
-       
+        store.set('tools_dataSource', temDataSource);
+        // setDataSource(temDataSource);
     }
 
     return (
         <>
             <Button.Group>
                 <Button onClick={() => setVisible(true)}>添加</Button>
+                <Button
+                    onClick={() => {
+                        Modal.confirm({
+                            title: '确定清空账号？',
+                            onOk: () => {
+                                clearAccount();
+                            }
+                        })
+                    }}
+                >清空账号</Button>
             </Button.Group>
 
             <Modal
@@ -358,47 +450,59 @@ const Index = ({ setTabKey, ip }) => {
                     >
                         <Checkbox />
                     </Form.Item>
-                    <Form.Item
-                        name="group"
-                        label="分组"
-                    >
-                        <Select options={groups} />
-                    </Form.Item>
                 </Form>
             </Modal>
             <Table
                 className="account_table"
+                rowKey={'id'}
                 columns={[
                     {
                         title: '账号',
                         dataIndex: 'account',
                         ellipsis: true,
+                        width: 100
                     },
                     {
                         title: '密码',
-                        dataIndex: 'password'
+                        dataIndex: 'password',
+                        ellipsis: true,
+                        width: 100
                     },
                     {
                         title: '是否代理',
                         dataIndex: 'agent',
-                        width: 100,
+                        width: 70,
                         render: (text, row, index) => {
                             return text ? '是' : '否'
                         }
 
                     },
                     {
-                        title: '分组',
-                        dataIndex: 'group',
-                        width: 100,
+                        title: '创建时间',
+                        dataIndex: 'createTime',
+                        width: 90,
+                    },
+                    {
+                        title: '账号状态',
+                        dataIndex: 'status',
+                        width: 90,
                         render: (text, row, index) => {
-                            return (groups.find(item => item.value === text) || { label: ''}).label
+                            switch (text) {
+                                case 1:
+                                    return '新添加'
+                                case 2:
+                                    return '未登录'
+                                case 10:
+                                    return '正常'
+                                default:
+                                    return '未知'
+                            }
                         }
                     },
                     {
                         title: '操作',
                         dataIndex: 'operation',
-                        width: 200,
+                        width: 300,
                         render: (text, row, index) => {
                             return (
                                 <Space>
@@ -414,7 +518,26 @@ const Index = ({ setTabKey, ip }) => {
                                     >编辑</Button>
                                     <Button
                                         onClick={() => {
-                                            setDataIndex((pageNo - 1) * 10 + index + 1)
+                                            login(row);
+                                        }}
+                                    >
+                                        {row.status === 1 || row.status === 2 ? '登录' : '查看账号'}
+                                    </Button>
+                                    {/* <Button
+                                        onClick={() => {
+                                            testAccount(row);
+                                        }}
+                                    >测试账号</Button> */}
+                                    <Button
+                                        onClick={() => {
+                                            if (isLoading) {
+                                                notification.info({
+                                                    message: '操作错误',
+                                                    description: '正在运行，请勿再次执行'
+                                                });
+                                                return
+                                            }
+                                            setDataIndex((pageNo - 1) * 10 + index + 1);
                                         }}
                                         type='primary'
                                         loading={row.loading}
@@ -427,6 +550,13 @@ const Index = ({ setTabKey, ip }) => {
                         }
                     }
                 ]}
+                rowSelection={{
+                    selectedRowKeys,
+                    onChange: (selectedRowKeys, selectedRows) => {
+                        setSelectedRowKeys(selectedRowKeys);
+                        store.set('tools_dataSource_selected', selectedRows)
+                    }
+                }}
                 dataSource={dataSource}
                 pagination={{
                     pageSizeOptions: [10, 20],

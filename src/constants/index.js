@@ -1,0 +1,1 @@
+export const dafault_count = 20; // 默认私信条数

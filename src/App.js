@@ -5,10 +5,9 @@ import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
 import { receiveData } from './action';
-import { opendevtool } from "./utils";
+import { opendevtool } from "./common";
+import { Config, Account, Agent, About } from './pages/index';
 
-import { default as ConfigIndex } from './pages/config/index';
-import { default as AccountIndex } from './pages/account/index';
 
 import './App.css';
 
@@ -42,19 +41,25 @@ const APP = ({ receiveData, auth, }) => {
     <Layout id="layout">
       <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
         <Tabs activeKey={tabKey} onChange={setTabKey} type='card' >
-          <Tabs.TabPane tab="账号" key="account">
-            <AccountIndex setTabKey={setTabKey} ip={ipInfo.IP}/>
-          </Tabs.TabPane>
           <Tabs.TabPane tab="配置" key="config">
-            <ConfigIndex />
-            <CodeOutlined onClick={opendevtool} title="控制台"/>
+            <Config />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="账号" key="account">
+            <Account setTabKey={setTabKey} ip={ipInfo.IP}/>
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="代理" key="agent">
+            <Agent />
+          </Tabs.TabPane>
+          <Tabs.TabPane tab="关于" key="about">
+            <About />
           </Tabs.TabPane>
         </Tabs>
       </Card>
       <Layout.Footer>
         <Space>
           <div>当前代理：{ipInfo.IP}</div>
-          <Button onClick={() => {fetchIp()}}>重置代理</Button>
+          <Button onClick={() => { fetchIp() }}>重置代理</Button>
+          <CodeOutlined onClick={opendevtool} title="控制台"/>
         </Space>
       </Layout.Footer>
     </Layout>
