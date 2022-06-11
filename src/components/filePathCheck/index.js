@@ -17,7 +17,7 @@ const Index = ({ value, onChange, ...resProps }) => {
     }
 
     return (
-        <div style={{ display: 'flex', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', width: '100%' }}>
             <Input value={value} style={{ flex: 1 }} onFocus={handleFocus}/>
             <input type={'file'} id="file" accept=".exe" onChange={handleFileChange} />
         </div>

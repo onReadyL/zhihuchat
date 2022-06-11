@@ -1,108 +1,59 @@
-import React, { useState } from "react";
-import { Form, Input, InputNumber } from 'antd';
+import React from "react";
+import { Card, Row, Col } from 'antd';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
 
-import { FilePathCheck } from '../../components/index';
-import { dafault_count } from '../../constants/index';
+import FunctionConfig from './functionConfig';
+import SettingConfig from './settingConfig';
+
+import { receiveData } from '../../action';
 import { store } from '../../common';
 
-const Config = () => {
+import './index.css';
 
-    const [toolsCofig, setToolsCofig] = useState(store.get('tools_config', {}));
-
-    const [form] = Form.useForm();
-
-    const handleValidateFields = () => {
-        form.validateFields().then((values) => {
-            store.set('tools_config', values);
-        }).catch(({ values }) => {
-            store.set('tools_config', values);
-        })
-    };
+const Config = ({ settingConfig, funcConfig, selectedRows }) => {
+    const formProps = {
+        labelCol: {
+            span: 6
+        },
+        wrapperCol: {
+            span:  18
+        },
+        colon: true,
+    }
 
     return (
-        <Form
-            {...{
-                labelCol: {
-                    span: 5
-                },
-                wrapperCol: {
-                    span: 17
-                },
-                colon: true,
-                form,
-                initialValues: toolsCofig
-            }}
-        >
-            <Form.Item
-                label="chrome路径"
-                name='path'
-                rules={[
-                    {
-                        whitespace: true,
-                        required: true,
-                        message: '必填'
-                    },
-                ]}
-            >
-                <FilePathCheck onChange={handleValidateFields} />
-            </Form.Item>
-            <Form.Item
-                name="url"
-                label="知乎专栏链接"
-                rules={[
-                    {
-                        whitespace: true,
-                        required: true,
-                        message: '必填'
-                    },
-                    {
-                        pattern: /zhuanlan.zhihu.com\/p/g,
-                        message: '请输入正确文章格式'
-                    }
-                ]}
-            >
-                <Input onBlur={handleValidateFields} />
-            </Form.Item>
-            <Form.Item
-                name="count"
-                label="私信条数"
-                initialValue={dafault_count}
-                rules={[
-                    {
-                        required: true,
-                        message: '必填'
-                    },
-                ]}
-            >
-                <InputNumber placeholder="请输入私信条数，默认20" min={1} onBlur={handleValidateFields} />
-            </Form.Item>
-            <Form.Item
-                name="chat_interval"
-                label="私信间隔"
-                rules={[
-                    {
-                        required: true,
-                        message: '必填'
-                    },
-                ]}
-            >
-                <InputNumber onBlur={handleValidateFields} min={1} addonAfter="秒" />
-            </Form.Item>
-            <Form.Item
-                name="text"
-                label="私信文本"
-                rules={[
-                    {
-                        required: true,
-                        whitespace: true,
-                        message: '必填'
-                    },
-                ]}
-            >
-                <Input.TextArea showCount={true} autoSize={{ maxRows: 5, minRows: 5 }} onBlur={handleValidateFields} />
-            </Form.Item>
-        </Form>
+        <Row className={'config_root'} gutter={12} style={{ height: '100%' }}>
+            <Col span={12} style={{ height: '100%'}}>
+                <Card title='环境配置' style={{ height: '100%', overflowY: 'scroll' }}>
+                    <SettingConfig {...{ formProps, settingConfig: settingConfig.data }} />
+                </Card>
+            </Col>
+            <Col span={12} style={{ height: '100%'}}>
+                <Card title='功能配置' style={{ height: '100%', overflowY: 'scroll' }}>
+                    <FunctionConfig {...{
+                        formProps,
+                        settingConfig: settingConfig.data,
+                        funcConfig: funcConfig.data,
+                        selectedRows: selectedRows.data
+                    }} />
+                </Card>
+            </Col>
+        </Row>
     )
 }
 
-export default Config;
+const mapStateToProps = (state) => {
+    const {
+        loading = { data: false },
+        settingConfig = { data: store.get('tools_setting_config', {}) },
+        funcConfig = { data: store.get('tools_func_config', []) },
+        selectedRows = { data: store.get('tools_dataSource_selected', [])}
+    } = state.httpData;
+    return { loading, settingConfig, funcConfig, selectedRows };
+  };
+const mapDispatchToProps = (dispatch) => ({
+    receiveData: bindActionCreators(receiveData, dispatch),
+});
+
+  export default connect(mapStateToProps, mapDispatchToProps)(Config);

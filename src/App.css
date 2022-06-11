@@ -1,5 +1,5 @@
 #layout {
-  height: 100%;
+  min-height: 100%;
   background-color: #f7f7f7;
 }
 .tools_card{
@@ -7,10 +7,11 @@
   margin: 10px !important;
   background-color: #fff !important;
 }
-.tools_card > .ant-tabs-card .ant-tabs-content {
-  height: 120px;
+.tools_card .ant-tabs-card .ant-tabs-content {
+  height: 100%;
   margin-top: -16px;
 }
+
 .tools_card > .ant-tabs-card .ant-tabs-content > .ant-tabs-tabpane {
   padding: 16px;
   background: #fff;

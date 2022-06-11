@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { CodeOutlined } from "@ant-design/icons";
-import { Layout, Card, Button, Tabs, Space } from "antd";
+import { Layout, Card, Button, Tabs, Space, notification } from "antd";
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
@@ -10,6 +10,10 @@ import { Config, Account, Agent, About } from './pages/index';
 
 
 import './App.css';
+
+notification.config({
+  duration: 3,
+});
 
 const APP = ({ receiveData, auth, }) => {
   const [tabKey, setTabKey] = useState('config');
@@ -33,32 +37,30 @@ const APP = ({ receiveData, auth, }) => {
     fetchIp();
   }, [fetchIp]);
 
-  // useEffect(() => {
-  //   receiveData({ key: 1}, 'auth')
-  // }, [])
-
   return (
     <Layout id="layout">
-      <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
-        <Tabs activeKey={tabKey} onChange={setTabKey} type='card' >
-          <Tabs.TabPane tab="配置" key="config">
-            <Config />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="账号" key="account">
-            <Account setTabKey={setTabKey} ip={ipInfo.IP}/>
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="代理" key="agent">
-            <Agent />
-          </Tabs.TabPane>
-          <Tabs.TabPane tab="关于" key="about">
-            <About />
-          </Tabs.TabPane>
-        </Tabs>
-      </Card>
+      <Layout.Content>
+        <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
+          <Tabs activeKey={tabKey} onChange={setTabKey} type='card' style={{ height: '100%'}}>
+            <Tabs.TabPane tab="配置" key="config">
+              <Config />
+            </Tabs.TabPane>
+            <Tabs.TabPane tab="账号" key="account">
+              <Account setTabKey={setTabKey} ip={ipInfo.IP}/>
+            </Tabs.TabPane>
+            {/* <Tabs.TabPane tab="代理" key="agent">
+              <Agent />
+            </Tabs.TabPane> */}
+            <Tabs.TabPane tab="关于" key="about">
+              <About />
+            </Tabs.TabPane>
+          </Tabs>
+        </Card>
+      </Layout.Content>
       <Layout.Footer>
         <Space>
-          <div>当前代理：{ipInfo.IP}</div>
-          <Button onClick={() => { fetchIp() }}>重置代理</Button>
+          {/* <div>当前代理：{ipInfo.IP}</div>
+          <Button onClick={() => { fetchIp() }}>重置代理</Button> */}
           <CodeOutlined onClick={opendevtool} title="控制台"/>
         </Space>
       </Layout.Footer>
