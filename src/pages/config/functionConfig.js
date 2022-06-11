@@ -27,7 +27,6 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
     };
 
     const handleBegin = async (field, selectedData) => {
-        setActiveKey(field)
         const value = form.getFieldValue(field);
 
         if (!value) {
@@ -58,16 +57,16 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             });
             return
         }
+        setActiveKey(field)
         for (let i = 0; i < selectedData.length; i++){
             try {
-                await begin(selectedData[i], settingConfig, value);
+                await begin(selectedData[i], settingConfig, value, field);
             } catch (error) {
                 console.log(error);
                 break;
             }
         }
-        setActiveKey()
-        
+        setActiveKey();
     };
 
     return (
@@ -98,6 +97,13 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
                             type='primary'
                             loading={activeKey === 'article_url'}
                             onClick={async () => {
+                                if (activeKey) {
+                                    notification.warn({
+                                        message: '操作错误',
+                                        description: '有任务正在进行，请关闭任务重试'
+                                    });
+                                    return
+                                }
                                 await handleBegin('article_url', selectedRows)
                             }}
                         >开始</Button>
@@ -111,7 +117,7 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
                     </Button.Group>
                 </Col>
             </Row>
-            {/* <Row>
+            <Row>
                 <Col span={18}>
                     <Form.Item
                         name="user_url"
@@ -119,7 +125,7 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
                         rules={[
                             {
                                 pattern: /\/people\//g,
-                                message: '请输入正确文章格式'
+                                message: '请输入正确格式'
                             }
                         ]}
                     >
@@ -131,18 +137,28 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
                         <Button
                             loading={activeKey === 'user_url'}
                             type='primary'
+                            onClick={async () => {
+                                if (activeKey) {
+                                    notification.warn({
+                                        message: '操作错误',
+                                        description: '有任务正在进行，请关闭任务重试'
+                                    });
+                                    return
+                                }
+                                await handleBegin('user_url', selectedRows)
+                            }}
                         >开始</Button>
-                        <Button
+                        {/* <Button
                             danger
                             onClick={() => {
                                 setActiveKey()
                             }}
                         
-                        >停止</Button>
+                        >停止</Button> */}
 
                     </Button.Group>
                 </Col>
-            </Row> */}
+            </Row>
             <Form.Item>
                 <Button htmlType="submit" type="primary">保存配置</Button>
             </Form.Item>

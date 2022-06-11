@@ -204,7 +204,7 @@ const Index = ({ selectedRows, receiveData }) => {
                     {
                         title: '操作',
                         dataIndex: 'operation',
-                        width: 200,
+                        width: 150,
                         render: (text, row, index) => {
                             return (
                                 <Space>
