@@ -1,1 +1,1 @@
-## electron + react + puppeteer
+## electron + react + puppeteer-core

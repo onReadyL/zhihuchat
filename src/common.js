@@ -1,4 +1,4 @@
-export const puppeteer = window.require("puppeteer");
+export const puppeteer = window.require("puppeteer-core");
 export const {
   ipcRenderer,
   shell: { openExternal },
@@ -8,9 +8,12 @@ export const {
 } = window.require("electron");
 
 export const child_process = window.require('child_process');
+
 export const chromeRemoteInterface = window.require('chrome-remote-interface');
 export const Version = window.require('chrome-remote-interface').Version;
+
 export const path = window.require('path');
+export const os = window.require('os');
 
 const Store = window.require('electron-store');
 export const store = new Store(); // 创建实例

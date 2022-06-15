@@ -2,9 +2,9 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 
 module.exports = function (app) {
     app.use(
-        '/tools/MeasureApi.ashx',
+        '/user/roles/list',
         createProxyMiddleware({
-            target: 'http://api1.ydaili.cn/',
+            target: 'https://user.api.it120.cc/',
             changeOrigin: true,
             pathRewrite: {'^': ''}
         }),

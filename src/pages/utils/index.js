@@ -3,6 +3,26 @@ import { notification } from 'antd';
 import { dafault_count } from '../../constants';
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer } from '../../common';
 
+// 设置cookie
+export const setCookie = (cname, cvalue, exdays) => {
+    const d = new Date();
+    d.setTime(d.getTime() + exdays * 24 * 60 * 60 * 1000);
+    const expires = 'expires=' + d.toUTCString();
+    document.cookie = cname + '=' + cvalue + ';' + expires + ';path=/';
+};
+
+// 通过名称删除cookie
+export const deleteCookie = (name) => {
+    document.cookie = name + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+};
+
+// 通过名称获取cookie
+export const getCookie = (name) => {
+    let value = '; ' + document.cookie;
+    let parts = value.split('; ' + name + '=');
+    if (parts.length === 2) return parts.pop().split(';').shift();
+};
+
 /** 登录账号 */
 export const login = async ({ account, id }) => {
     const { chromePath } = store.get('tools_setting_config', {});

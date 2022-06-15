@@ -25,13 +25,14 @@
     "electron-store": "8.0.1",
     "moment": "^2.29.3",
     "nanoid": "^3.3.4",
-    "puppeteer": "^7.0.1",
+    "puppeteer-core": "^14.3.0",
     "react": "^17.0.1",
     "react-dom": "^17.0.1",
     "react-redux": "^8.0.2",
     "react-scripts": "5.0.1",
     "redux": "^4.2.0",
-    "redux-thunk": "^2.4.1"
+    "redux-thunk": "^2.4.1",
+    "umi-request": "^1.4.0"
   },
   "scripts": {
     "start": "cross-env NODE_ENV=development concurrently \"yarn run client\" \"wait-on http://localhost:3000 && yarn run electron:watch\" ",
