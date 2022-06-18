@@ -35,7 +35,7 @@ const Config = ({ settingConfig, funcConfig, selectedRows }) => {
                         formProps,
                         settingConfig: settingConfig.data,
                         funcConfig: funcConfig.data,
-                        selectedRows: selectedRows.data
+                        selectedRows: selectedRows.data,
                     }} />
                 </Card>
             </Col>
@@ -56,4 +56,4 @@ const mapDispatchToProps = (dispatch) => ({
     receiveData: bindActionCreators(receiveData, dispatch),
 });
 
-  export default connect(mapStateToProps, mapDispatchToProps)(Config);
+export default connect(mapStateToProps, mapDispatchToProps)(Config);

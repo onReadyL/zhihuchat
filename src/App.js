@@ -1,15 +1,13 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { CodeOutlined } from "@ant-design/icons";
-import { Layout, Card, Tabs, Space, notification, Button } from "antd";
+import { Layout, Card, Tabs, Space, notification } from "antd";
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
 import { receiveData } from './action';
-import { opendevtool } from "./common";
+import { opendevtool, store } from "./common";
 import { Config, Account, Agent, About, Personal, Lock } from './pages/index';
-import { request } from './pages/utils/request'
-import { getCookie } from './pages/utils/index';
-
+import { decrypt } from './pages/utils/verify';
 
 import './App.css';
 
@@ -17,17 +15,48 @@ notification.config({
   duration: 3,
 });
 
-const APP = ({ receiveData, }) => {
+const APP = ({ lock, receiveData }) => {
+
+  useEffect(() => {
+    try {
+      const publicKey = store.get('publicKey', '');
+      const code = store.get('code', '');
+      if (!publicKey || !code) {
+        receiveData(true, 'lock');
+      };
+      const str = decrypt(publicKey, code);
+    
+      if (!str) return;
+      const { offlineDate } = JSON.parse(str);
+
+      const offlineTime = new Date(`${offlineDate} 00:00:00`).getTime();
+      const now = new Date().getTime();
+      if (offlineTime <= now ) {
+        receiveData(true, 'lock');
+      } else {
+        receiveData(false, 'lock');
+      }
+    } catch (error) {
+      
+    }
+
+  }, [receiveData]);
+
   const [tabKey, setTabKey] = useState('config');
 
-  const [lock, setLock] = useState(false);
-
   return (
-    lock ? (<Lock setLock={setLock} />) : (
+    lock.data ? (<Lock />) : (
       <Layout id="layout">
         <Layout.Content>
           <Card className="tools_card" bodyStyle={{ height: '100%', padding: '0px' }}>
-            <Tabs activeKey={tabKey} onChange={setTabKey} type='card' style={{ height: '100%'}}>
+            <Tabs
+              activeKey={tabKey}
+              onChange={() => {
+                setTabKey();
+              }}
+              type='card'
+              style={{ height: '100%' }}
+            >
               <Tabs.TabPane tab="配置" key="config">
                 <Config />
               </Tabs.TabPane>
@@ -48,8 +77,9 @@ const APP = ({ receiveData, }) => {
         </Layout.Content>
         <Layout.Footer>
           <Space>
-            <CodeOutlined onClick={opendevtool} title="控制台" />
-            <Button onClick={() => { setLock(true) }}>锁定</Button>
+            {process.env.NODE_ENV === "development" && (
+              <CodeOutlined onClick={opendevtool} title="控制台" />
+            )}
           </Space>
         </Layout.Footer>
       </Layout>)
@@ -57,9 +87,10 @@ const APP = ({ receiveData, }) => {
 };
 
 const mapStateToProps = (state) => {
-  const {} = state.httpData;
-  return { };
+  const { lock = { data: true }} = state.httpData;
+  return { lock };
 };
+
 const mapDispatchToProps = (dispatch) => ({
   receiveData: bindActionCreators(receiveData, dispatch),
 });

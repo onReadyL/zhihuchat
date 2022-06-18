@@ -2,10 +2,7 @@ const {
   app,
   ipcMain,
   BrowserWindow,
-  Notification,
-  Tray,
   Menu: { buildFromTemplate, setApplicationMenu },
-  screen,
 } = require("electron");
 
 const Store = require('electron-store');
@@ -17,7 +14,7 @@ const isDev = process.env.NODE_ENV === "development";
 let mainWindow = null;
 
 const Hand = async () => {
-  //当electron完成初始化后触发init-day-data
+
   mainWindow = new BrowserWindow({
     show: false,
     width: 1000,
@@ -33,12 +30,19 @@ const Hand = async () => {
       enableRemoteModule: true, //是否有子页面
       contextIsolation: false, //是否禁止node
       nodeIntegrationInSubFrames: true, //否允许在子页面(iframe)或子窗口(child window)中集成Node.js
+      preload: ''
     },
   });
 
+  const url = require('url').format({
+    protocol: 'file',
+    slashes: true,
+    pathname: require('path').join(__dirname, 'index.html')
+  })
+
   isDev
     ? mainWindow.loadURL(`http://localhost:3000`)
-    : mainWindow.loadURL(`file://${__dirname}\\index.html`);
+    : mainWindow.loadURL(url);
   
   // 配置菜单
   setApplicationMenu(buildFromTemplate([]));
