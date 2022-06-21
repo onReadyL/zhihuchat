@@ -1,4 +1,5 @@
 import { notification } from 'antd';
+import iconv from 'iconv-lite';
 
 import { dafault_count } from '../../constants';
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer } from '../../common';
@@ -110,25 +111,81 @@ export const testAccount = async ({ account, id }) => {
 }
 
 /** 开始 */
-export const begin = async (values, settingConfig, url, field) => {
-
+export const begin = async (values, settingConfig, url, field, activeIndex, agentType, vpsConfig, vpsTest) => {
+    const dataSource = store.get('tools_dataSource', []);
     const { account, agent = false, id } = values;
     const { chromePath, count, chat_interval, random, texts } = settingConfig;
+    const { vpsName, vpsAccount, vpsPassword  } = vpsConfig;
     // 私信条数
     const tempCount = count || dafault_count;
 
     let childProcess;
 
-    // if (agent) {
-    //     childProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=9222 --profile-directory=${account} --app-shell-host-window-size=1024x768 --proxy-server=${''}`, (error, stdout, stderr) => {
+    if (agent) {
+        if (agentType === 'vps') {
+            if (!vpsName) {
+                notification.warn({
+                    message: '操作错误',
+                    description: '未配置wps',
+                })
+                throw new Error('未配置vps');
+            }
+            if (!vpsTest) {
+                notification.warn({
+                    message: '操作错误',
+                    description: 'vps拨号未测试或测试不通过',
+                })
+                throw new Error('vps拨号未测试或测试不通过');
+            }
+            if (activeIndex !== 0) {
+                // 第二个账号开始重新拨号
+                const rasdialDisconnectPromise = new Promise((res, rej) => {
+                    child_process.exec(`Rasdial ${vpsName} /disconnect`, { encoding: 'binary' }, (err, stdout, stderr) => {
+                        if (stdout) {
+                            res(iconv.decode(new Buffer(stdout, 'binary'), 'cp936'));
+                        } else if (err || stderr) {
+                            rej(err || stderr);
+                        }
+                    })
+                });
+                await rasdialDisconnectPromise;
+                const rasdialConnectPromise = new Promise((res, rej) => {
+                    child_process.exec(`Rasdial ${vpsName} ${vpsAccount} ${vpsPassword}`, { encoding: 'binary' }, (err, stdout, stderr) => {
+                        if (stdout) {
+                            res(iconv.decode(new Buffer(stdout, 'binary'), 'cp936'));
+                        } else if (err || stderr) {
+                            rej(err || stderr);
+                        }
+                    })
+                });
+            
+                const reConnenctStatusStr = await rasdialConnectPromise.then(res => res).catch(err => false);
+                const reConnenctStatusArr = reConnenctStatusStr.split(/[\s\n]/).filter(item => !!item);
+                if (!reConnenctStatusStr) return false;
+
+                if (reConnenctStatusArr.includes('远程访问错误')) {
+                    notification.warn({
+                        message: '拨号错误',
+                        description: '远程访问错误'
+                    });
+                    throw new Error('远程访问错误')
+                }
+                await waitFor(1000);
+                childProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=9222 --profile-directory=${account} --app-shell-host-window-size=800x768`, (error, stdout, stderr) => {
                 
-    //     }); 
-    // } else {
+                });
+            }
+            
+        } else if (agentType === 'ip') {
+            childProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=9222 --profile-directory=${account} --app-shell-host-window-size=1024x768 --proxy-server=${''}`, (error, stdout, stderr) => {
+                
+            }); 
+        }
+    } else {
         childProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=9222 --profile-directory=${account} --app-shell-host-window-size=800x768`, (error, stdout, stderr) => {
                 
         });
-    // };
-
+    };
     let client;
     let Page;
     let Network;
@@ -145,12 +202,29 @@ export const begin = async (values, settingConfig, url, field) => {
         });
 
         if (!isLogined) {
+            const temDataSource = dataSource.map((item) => {
+                if (item.id === id) {
+                    return { ...item, status: 2 }
+                } else {
+                    return item
+                }
+            });
+            store.set('tools_dataSource', temDataSource);
             notification.warn({
                 message: '请登录',
                 description: '登录后关闭浏览器重新开始（请勿登录其他账号）'
             });
             throw new Error('未登录');
-        }
+        } else {
+            const temDataSource = dataSource.map((item) => {
+                if (item.id === id) {
+                    return { ...item, status: 10 }
+                } else {
+                    return item
+                }
+            });
+            store.set('tools_dataSource', temDataSource)
+        };
 
         await Version({}).then(async (info) => {
             const { webSocketDebuggerUrl } = info || {};
@@ -394,7 +468,7 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
     if (followersCount === '0') {
         notification.info({
             message: '操作错误',
-            description: '当前账号无关注着'
+            description: '当前账号无关注者'
         });
         throw new Error('无关注着');
     }
@@ -497,5 +571,78 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
             pageIndex = 0;
         }
     }
+
+}
+
+/** 测试vps */
+export const testVps = async ({ vpsName, vpsAccount, vpsPassword }) => {
+
+    const childProcessRasdialPromise = new Promise((res, rej) => {
+        child_process.exec('Rasdial', { encoding: 'binary' }, (err, stdout, stderr) => {
+            if (stdout) {
+                res(iconv.decode(new Buffer(stdout, 'binary'), 'cp936'));
+            } else if (err || stderr) {
+                rej(err || stderr);
+            }
+        })
+    });
+
+    const initialStatusStr = await childProcessRasdialPromise.then(res => {
+        return res;
+    }).catch(err => {
+        return;
+    });
+
+    if (!initialStatusStr) {
+        return false
+    }
+    const statusArr = initialStatusStr.split(/[\s\n]/).filter(item => !!item) // 以换行和空格切割
+    // 已连接
+    const isConnection = statusArr.includes('已连接');
+    const isDissConnection = statusArr.includes('没有连接');
+    const isConnectionError = statusArr.includes('远程访问错误');
+
+    if (isConnection) {
+        // 已连接
+        const connenctName = statusArr[1];
+        const childProcessRasdialDisconnectPromise = new Promise((res, rej) => {
+            child_process.exec(`Rasdial ${connenctName} /disconnect`, { encoding: 'binary' }, (err, stdout, stderr) => {
+                if (stdout) {
+                    res(iconv.decode(new Buffer(stdout, 'binary'), 'cp936'));
+                } else if (err || stderr) {
+                    rej(err || stderr);
+                }
+            })
+        });
+        await childProcessRasdialDisconnectPromise;
+    }
+
+    const childProcessRasdialConnectPromise = new Promise((res, rej) => {
+        child_process.exec(`Rasdial ${vpsName} ${vpsAccount} ${vpsPassword}`, { encoding: 'binary' }, (err, stdout, stderr) => {
+            if (stdout) {
+                res(iconv.decode(new Buffer(stdout, 'binary'), 'cp936'));
+            } else if (err || stderr) {
+                rej(err || stderr);
+            }
+        })
+    });
+
+    const reConnenctStatusStr = await childProcessRasdialConnectPromise.then(res => res).catch(err => false);
+
+    const reConnenctStatusArr = reConnenctStatusStr.split(/[\s\n]/).filter(item => !!item);
+    if (!reConnenctStatusStr) return false;
+
+    if (reConnenctStatusArr.includes('远程访问错误')) {
+        return false
+    } else if (reConnenctStatusArr.includes('已连接')) {
+        return true;
+    }
+
+
+    // 远程访问错误 623 系统无法为这个连接找到电话簿项目
+    // 远程访问错误 691 已拒绝远程连接，因为未识别出您提供的用户名和密码组合，或在远程访问服务器上禁止使用选定的身份验证协议
+    // 远程访问错误 756 已经拨了这个连接
+    // 远程访问错误 651 调制解调器(或其他连接设备)报告了一个错误
+    // 已连接
 
 }

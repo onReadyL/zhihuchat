@@ -57,21 +57,21 @@ const APP = ({ lock, receiveData }) => {
               type='card'
               style={{ height: '100%' }}
             >
-              <Tabs.TabPane tab="配置" key="config">
+              <Tabs.TabPane tab="环境和功能配置" key="config">
                 <Config />
               </Tabs.TabPane>
               <Tabs.TabPane tab="账号" key="account">
                 <Account setTabKey={setTabKey} ip={''}/>
               </Tabs.TabPane>
-              {/* <Tabs.TabPane tab="代理" key="agent">
+              <Tabs.TabPane tab="代理配置" key="agent">
                 <Agent />
-              </Tabs.TabPane> */}
+              </Tabs.TabPane>
               <Tabs.TabPane tab="关于" key="about">
                 <About />
               </Tabs.TabPane>
-              <Tabs.TabPane tab="个人" key="personal">
+              {/* <Tabs.TabPane tab="个人" key="personal">
                 <Personal />
-              </Tabs.TabPane>
+              </Tabs.TabPane> */}
             </Tabs>
           </Card>
         </Layout.Content>

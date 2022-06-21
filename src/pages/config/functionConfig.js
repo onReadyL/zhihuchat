@@ -7,12 +7,11 @@ import { receiveData } from '../../action';
 import { store, waitFor } from '../../common';
 import { begin } from '../utils';
 
-const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows }) => {
-
+const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest }) => {
     const [form] = Form.useForm();
 
     /** 配置 */
-    const { chromePath, count, chat_interval, random, texts } = settingConfig;
+    const { chromePath, count, chat_interval, random, texts, agentType } = settingConfig;
 
     const [isLoading, setIsLoading] = useState(false);
 
@@ -57,10 +56,10 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             });
             return
         }
-        setActiveKey(field)
+        setActiveKey(field);
         for (let i = 0; i < selectedData.length; i++){
             try {
-                await begin(selectedData[i], settingConfig, value, field);
+                await begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, vpsTest);
             } catch (error) {
                 console.log(error);
                 break;

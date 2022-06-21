@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Form, Input, Button, InputNumber, Checkbox, notification } from 'antd';
+import { Form, Input, Button, InputNumber, Checkbox, notification, Radio } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
@@ -13,7 +13,6 @@ import './settingConfig.css';
 
 const Index = ({ formProps, receiveData, settingConfig }) => {
 
-    const [toolsCofig, setToolsCofig] = useState(settingConfig);
     const [form] = Form.useForm();
 
     const handleFinish = (values) => {
@@ -30,12 +29,12 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
             {...formProps}
             {...{
                 form,
-                initialValues: toolsCofig,
+                initialValues: settingConfig,
                 onFinish: handleFinish
             }}
         >
             <Form.Item
-                label="chrome路径"
+                label="chrome"
                 name='chromePath'
                 rules={[
                     {
@@ -71,6 +70,14 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
                 ]}
             >
                 <InputNumber min={1} addonAfter="秒" />
+            </Form.Item>
+            <Form.Item
+                label='代理方式'
+                name='agentType'
+            >
+                <Radio.Group>
+                    <Radio value={'vps'}>VPS拨号</Radio>
+                </Radio.Group>
             </Form.Item>
             <Form.Item
                 name="random"

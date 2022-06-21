@@ -28,22 +28,34 @@ const Index = ({ selectedRows, receiveData }) => {
     const [form] = Form.useForm();
 
     const [isEdit, setIsEdit] = useState({
-        index: 0,
+        id: undefined,
         bool: false
     });
 
     /** 确定添加账号 */
     const onOk = () => {
         form.validateFields().then((values) => {
-            let tempValues;
+            let tempValues = [];
+            let tempSelectedRows = [];
             if (isEdit.bool) {
                 tempValues = dataSource.map((item, index) => {
-                    if (isEdit.index - 1 === index) {
-                        return {...item, ...values};
+                    if (isEdit.id === item.id) {
+                        return { ...item, ...values };
                     } else {
                         return item
                     }
-                })
+                });
+                tempSelectedRows = selectedRows.data.map(item => {
+                    if (item.id === isEdit.id) {
+                        return {
+                            ...item, ...values
+                        }
+                    } else {
+                        return item
+                    }
+                });
+                store.set('tools_dataSource_selected', tempSelectedRows);
+                receiveData(tempSelectedRows, 'selectedRows');
             } else {
                 const isExsit = dataSource.find(item => item.account === values.account);
                 if (!!isExsit) {
@@ -55,7 +67,6 @@ const Index = ({ selectedRows, receiveData }) => {
                 tempValues = [...dataSource, {...values, id: nanoid(10), status: 1, createTime: moment().format('YYYY-MM-DD') }];
             }
             store.set('tools_dataSource', tempValues);
-            // setDataSource(tempValues);
             form.resetFields();
             setIsEdit((prev) => ({ ...prev, bool: false }));
             setVisible(false);
@@ -64,19 +75,23 @@ const Index = ({ selectedRows, receiveData }) => {
 
     /** 清空账号 */
     const clearAccount = () => {
-        // setDataSource([]);
         store.delete("tools_dataSource");
+        receiveData([], 'selectedRows');
     }
 
     /** 删除账号 */
-    const handleDelete = (index) => {
-        const temDataSource = dataSource.filter((item, i) => i + 1 !== index);
+    const handleDelete = (id) => {
+        const temDataSource = dataSource.filter((item, i) => item.id !== id);
         store.set('tools_dataSource', temDataSource);
+        // 更新选中
+        const tempSelectedRows = selectedRows.data.filter(item => item.id !== id);
+        store.set('tools_dataSource_selected', tempSelectedRows);
+        receiveData(tempSelectedRows, 'selectedRows');
     }
 
     return (
         <>
-            <Button.Group>
+            <Button.Group style={{ paddingBottom: 10 }}>
                 <Button onClick={() => setVisible(true)}>添加</Button>
                 <Button
                     onClick={() => {
@@ -214,7 +229,7 @@ const Index = ({ selectedRows, receiveData }) => {
                                             form.setFieldsValue(row);
                                             setIsEdit({
                                                 bool: true,
-                                                index: (pageNo - 1) * 10 + index + 1
+                                                id: row.id,
                                             })
                                         }}
                                     >编辑</Button>
@@ -230,7 +245,7 @@ const Index = ({ selectedRows, receiveData }) => {
                                             testAccount(row);
                                         }}
                                     >测试账号</Button> */}
-                                    <Button type='ghost' onClick={() => handleDelete((pageNo - 1) * 10 + index + 1)}>删除</Button>
+                                    <Button type='ghost' onClick={() => handleDelete(row.id)}>删除</Button>
                                 </Space>
                             )
                         }
