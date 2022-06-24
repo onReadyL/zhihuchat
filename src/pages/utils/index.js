@@ -1,8 +1,8 @@
 import { notification } from 'antd';
 import iconv from 'iconv-lite';
 
-import { dafault_count } from '../../constants';
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer } from '../../common';
+import { chat_max_count } from '../../constants';
 
 /** 登录账号 */
 export const login = async ({ account, id }) => {
@@ -116,8 +116,6 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
     const { account, agent = false, id } = values;
     const { chromePath, count, chat_interval, random, texts } = settingConfig;
     const { vpsName, vpsAccount, vpsPassword  } = vpsConfig;
-    // 私信条数
-    const tempCount = count || dafault_count;
 
     let childProcess;
 
@@ -282,9 +280,9 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             // TODO: 等待页面加载完
             await waitFor(1000);
             if (field === 'article_url') {
-                await zhuanlanChat({ browser, page: page1, count: tempCount, interval: chat_interval, id, texts, random  });
+                await zhuanlanChat({ browser, page: page1, count, interval: chat_interval, id, texts, random  });
             } else if (field === 'user_url') {
-                await followersChat({ browser, page: page1, count: tempCount, interval: chat_interval, id, texts, random  })
+                await followersChat({ browser, page: page1, count, interval: chat_interval, id, texts, random  })
             }
 
         }).catch((err) => {
@@ -338,20 +336,20 @@ const zhuanlanChat = async ({ browser, page, count, interval, id, texts, random 
 
     const voterContent = await page.waitForSelector('.VoterList > .VoterList-content', { timeout: 3000 });
 
-     // 滚动加载
-     await waitFor(1000);
-     let preCount = 0;
-     let postCount = 0;
-     try {
+    // 滚动加载
+    await waitFor(1000);
+    let preCount = 0;
+    let postCount = 0;
+    try {
          do {
              preCount = await voterContent.$$('.List-item').then(res => res.length);
              await voterContent.$$('.List-item').then(res => {
-                 return (res[res.length - 1]).hover();
+                (res[res.length - 1]).hover();
              });
              await waitFor(1000);
              postCount = await voterContent.$$('.List-item').then(res => res.length);
          } while (
-             postCount > preCount
+             postCount > preCount && count > postCount
          );
      } catch (error) {
          throw new Error(error);
@@ -416,6 +414,7 @@ const zhuanlanChat = async ({ browser, page, count, interval, id, texts, random 
                                 message: '账号问题',
                                 description: '此账号身份验证存在问题'
                             });
+                            await page.close();
                             throw new Error('账号异常');
                         }
                     }
@@ -480,7 +479,7 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
     const profileFollowingWrapper = await page.waitForSelector('.ListShortcut > .List > div:last-child', { timeout: 3000 });
     let followersListItem = await profileFollowingWrapper.$$('.List-item');
 
-    let pageIndex = 19;
+    let pageIndex = 0;
     for (let i = 0; i < count; i++) {
         i !== 0 && await waitFor(interval * 1000); // 间隔时间
         await followersListItem[pageIndex].$('.ContentItem .ContentItem-main .ContentItem-head .UserLink').then(res => res.click()); // 打开新页面
@@ -645,4 +644,16 @@ export const testVps = async ({ vpsName, vpsAccount, vpsPassword }) => {
     // 远程访问错误 651 调制解调器(或其他连接设备)报告了一个错误
     // 已连接
 
+}
+
+/** 检查版本降低时，配置是否合法 */
+export const verifyVersion = ({ count }) => {
+    if (count > chat_max_count) {
+        notification.warn({
+            message: '操作错误',
+            description: '版本降低，请更新配置'
+        });
+        return false
+    }
+    return true;
 }

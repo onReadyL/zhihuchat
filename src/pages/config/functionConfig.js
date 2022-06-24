@@ -5,15 +5,13 @@ import { connect } from 'react-redux';
 
 import { receiveData } from '../../action';
 import { store, waitFor } from '../../common';
-import { begin } from '../utils';
+import { begin, verifyVersion } from '../utils';
 
-const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest }) => {
+const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest, verify }) => {
     const [form] = Form.useForm();
 
     /** 配置 */
     const { chromePath, count, chat_interval, random, texts, agentType } = settingConfig;
-
-    const [isLoading, setIsLoading] = useState(false);
 
     const [activeKey, setActiveKey] = useState();
 
@@ -26,6 +24,15 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
     };
 
     const handleBegin = async (field, selectedData) => {
+        
+        if (!verify()) {
+            return;
+        }
+
+        if (!verifyVersion({ count })) {
+            return;
+        }
+
         const value = form.getFieldValue(field);
 
         if (!value) {
@@ -49,6 +56,13 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             });
             return
         };
+        if (!count) {
+            notification.warn({
+                message: '配置错误',
+                description: '未配置私信条数'
+            });
+            return
+        }
         if (!texts || !texts.length) {
             notification.warn({
                 message: '配置错误',

@@ -11,7 +11,14 @@ import { store } from '../../common';
 
 import './index.css';
 
-const Config = ({ settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest }) => {
+const Config = ({
+    settingConfig,
+    funcConfig,
+    selectedRows,
+    vpsConfig,
+    vpsTest,
+    verify,
+}) => {
     const formProps = {
         labelCol: {
             span: 5
@@ -26,7 +33,10 @@ const Config = ({ settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest })
         <Row className={'config_root'} gutter={8} style={{ height: '100%' }}>
             <Col span={12} style={{ height: '100%'}}>
                 <Card title='环境配置' style={{ height: '100%', overflowY: 'scroll' }}>
-                    <SettingConfig {...{ formProps, settingConfig: settingConfig.data }} />
+                    <SettingConfig {...{
+                        formProps,
+                        settingConfig: settingConfig.data,
+                    }} />
                 </Card>
             </Col>
             <Col span={12} style={{ height: '100%'}}>
@@ -37,7 +47,8 @@ const Config = ({ settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest })
                         funcConfig: funcConfig.data,
                         selectedRows: selectedRows.data,
                         vpsConfig: vpsConfig.data,
-                        vpsTest: vpsTest.data
+                        vpsTest: vpsTest.data,
+                        verify
                     }} />
                 </Card>
             </Col>

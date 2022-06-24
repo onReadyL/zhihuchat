@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { CodeOutlined } from "@ant-design/icons";
 import { Layout, Card, Tabs, Space, notification } from "antd";
 import { bindActionCreators } from 'redux';
@@ -17,12 +17,13 @@ notification.config({
 
 const APP = ({ lock, receiveData }) => {
 
-  useEffect(() => {
+  const verify = useCallback(() => {
     try {
       const publicKey = store.get('publicKey', '');
       const code = store.get('code', '');
       if (!publicKey || !code) {
         receiveData(true, 'lock');
+        return false;
       };
       const str = decrypt(publicKey, code);
     
@@ -33,14 +34,19 @@ const APP = ({ lock, receiveData }) => {
       const now = new Date().getTime();
       if (offlineTime <= now ) {
         receiveData(true, 'lock');
+        return false;
       } else {
         receiveData(false, 'lock');
+        return true;
       }
     } catch (error) {
       
     }
+  }, [receiveData])
 
-  }, [receiveData]);
+  useEffect(() => {
+    verify();
+  }, [verify]);
 
   const [tabKey, setTabKey] = useState('config');
 
@@ -53,12 +59,13 @@ const APP = ({ lock, receiveData }) => {
               activeKey={tabKey}
               onChange={() => {
                 setTabKey();
+                verify();
               }}
               type='card'
               style={{ height: '100%' }}
             >
               <Tabs.TabPane tab="环境和功能配置" key="config">
-                <Config />
+                <Config verify={verify} />
               </Tabs.TabPane>
               <Tabs.TabPane tab="账号" key="account">
                 <Account setTabKey={setTabKey} ip={''}/>

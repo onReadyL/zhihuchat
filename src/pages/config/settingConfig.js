@@ -1,12 +1,12 @@
-import React, { useState } from "react";
+import React from "react";
 import { Form, Input, Button, InputNumber, Checkbox, notification, Radio } from 'antd';
 import { PlusOutlined, MinusCircleOutlined } from '@ant-design/icons'
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
 import { store } from '../../common';
+import { chat_max_count } from '../../constants/index';
 import { FilePathCheck } from '../../components';
-import { dafault_count } from '../../constants/index';
 import { receiveData } from '../../action';
 
 import './settingConfig.css';
@@ -49,15 +49,24 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
             <Form.Item
                 name="count"
                 label="私信条数"
-                initialValue={dafault_count}
+                validateFirst
                 rules={[
                     {
                         required: true,
                         message: '必填'
                     },
+                    {
+                        type: 'number',
+                        validator: (rules, value, callback) => {
+                            if (value > chat_max_count) {
+                                callback(`当前版本支持最多私信条数为:${chat_max_count}`)
+                            }
+                            callback()
+                        }
+                    }
                 ]}
             >
-                <InputNumber placeholder="请输入私信条数，默认20" min={1} />
+                <InputNumber placeholder='私信条数' min={1} />
             </Form.Item>
             <Form.Item
                 name="chat_interval"

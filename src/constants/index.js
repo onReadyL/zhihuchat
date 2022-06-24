@@ -1,1 +1,1 @@
-export const dafault_count = 20; // 默认私信条数
+export const chat_max_count = process.env.NODE_ENV === 'development' ? 1000000 : process.env.REACT_APP_CHAT_MAX_COUNT; // 私信最大条数
