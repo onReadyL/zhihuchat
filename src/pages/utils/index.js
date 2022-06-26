@@ -477,10 +477,16 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
     }, followersA);
     await waitFor(2000); //  等待渲染
     const profileFollowingWrapper = await page.waitForSelector('.ListShortcut > .List > div:last-child', { timeout: 3000 });
+    let total = 0;
     let followersListItem = await profileFollowingWrapper.$$('.List-item');
 
     let pageIndex = 0;
     for (let i = 0; i < count; i++) {
+        const nowPageCount = await profileFollowingWrapper.$$('.List-item').then(res => res.length);
+        total = total + nowPageCount;
+        if ( i >= total) {
+            break;
+        }
         i !== 0 && await waitFor(interval * 1000); // 间隔时间
         await followersListItem[pageIndex].$('.ContentItem .ContentItem-main .ContentItem-head .UserLink').then(res => res.click()); // 打开新页面
         await page.mouse.move(0, 0);
