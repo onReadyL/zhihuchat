@@ -1,15 +1,19 @@
 import { notification } from 'antd';
 import iconv from 'iconv-lite';
 
-import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer } from '../../common';
+import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer, List } from '../../common';
 import { chat_max_count } from '../../constants';
 
-const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => {}) => {
+/** 启动chrome */
+const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => { }) => {
+    const parhArr = chromePath.split('\\');
+    parhArr.splice(parhArr.length - 1, 1, 'userData', account);
+    const userDataDir = parhArr.join('\\');
     let tempChildProcess;
     if (proxy) {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --profile-directory=${account} --window-size=888,768 --proxy-server=${proxy} ${resParams.join(' ')}`, options, callback); 
+        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=888,768 --proxy-server=${proxy} ${resParams.join(' ')}`, options, callback); 
     } else {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --profile-directory=${account} --window-size=888,768 ${resParams.join(' ')}`, options, callback);
+        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=888,768 ${resParams.join(' ')}`, options, callback);
     }
     if (tempChildProcess) {
         tempChildProcess.on('error', () => {
@@ -20,6 +24,25 @@ const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resP
         })
     }
     return tempChildProcess;
+}
+
+/** 查看某个端口是否被占用 */
+const canPortUsed = async ({ port }) => {
+    const portCheckPromise = new Promise((res, rej) => {      
+        let cp = child_process.exec(`netstat -aon|findstr "${port}"`, { encoding: 'binary' });
+        cp.on('error', (data) => {
+            rej(data)
+        })
+        cp.on('close', (code) => {
+            if (code) {
+              res(true)  
+            }
+        })
+        cp.stdout.on('data', (data) => {
+            res(false)
+        })
+    });
+    return await portCheckPromise.then(res => res).catch(err => false)
 }
 
 /** 登录账号 */
@@ -74,7 +97,7 @@ export const testAccount = async ({ account, id }) => {
        }
     }
     
-    startChromeProcess({ chromePath, url: 'www.zhihu.com', account, resParams: ['--no-sandbox'] }, { killSignal: 'SIGTERM', signal, }, callback);
+    startChromeProcess({ chromePath, url: 'www.zhihu.com', account, }, { killSignal: 'SIGTERM', signal, }, callback);
 
     let client;
     let Page;
@@ -133,7 +156,20 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
     const dataSource = store.get('tools_dataSource', []);
     const { account, agent = false, id } = values;
     const { chromePath, count, chat_interval, random, texts } = settingConfig;
-    const { vpsName, vpsAccount, vpsPassword  } = vpsConfig;
+    const { vpsName, vpsAccount, vpsPassword } = vpsConfig;
+    
+    let startPort = 9222;
+    let port = 9222;
+    // TODO：优化循环完之后的提示
+    for (let i = 0; i < 50; i++) {
+        port = startPort + i;
+        let canIUse = await canPortUsed({ port });
+        if (canIUse) {
+            break;
+        }
+    }
+
+    console.log(port);
 
     let childProcess;
 
@@ -187,21 +223,21 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
                     throw new Error('远程访问错误')
                 }
                 await waitFor(1000);
-                childProcess = startChromeProcess({ chromePath, url, port: 9222, account, });
+                childProcess = startChromeProcess({ chromePath, url, port, account, });
             }
             
         } else if (agentType === 'ip') {
-            childProcess = startChromeProcess({ chromePath, url, port: 9222, account, proxy: '' }); 
+            childProcess = startChromeProcess({ chromePath, url, port, account, proxy: '' }); 
         }
     } else {
-        childProcess = startChromeProcess({ chromePath, url, port: 9223, account, });
+        childProcess = startChromeProcess({ chromePath, url, port, account, });
     };
     let client;
     let Page;
     let Network;
 
     try {
-        client = await chromeRemoteInterface({ port: '9223' });
+        client = await chromeRemoteInterface({ port });
 
         Page = client.Page;
         Network = client.Network;
@@ -236,7 +272,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             store.set('tools_dataSource', temDataSource)
         };
 
-        await Version({ port: 9223 }).then(async (info) => {
+        await Version({ port }).then(async (info) => {
             const { webSocketDebuggerUrl } = info || {};
 
             const browser = await puppeteer.connect({

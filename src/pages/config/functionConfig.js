@@ -71,15 +71,14 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             return
         }
         setActiveKey(field);
+        const promiseArr = [];
         for (let i = 0; i < selectedData.length; i++){
-            try {
-                await begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, vpsTest);
-            } catch (error) {
-                console.log(error);
-                break;
-            }
+            i !== 0 && await waitFor(1000);
+            promiseArr.push(begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, vpsTest))
         }
-        setActiveKey();
+        Promise.allSettled(promiseArr).then(res => {
+            setActiveKey();
+        })
     };
 
     return (
