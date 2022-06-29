@@ -45,6 +45,19 @@ const canPortUsed = async ({ port }) => {
     return await portCheckPromise.then(res => res).catch(err => false)
 }
 
+/** 输出一个port */
+const getPort = async (port = 9222) => {
+    let startPort = port;
+    for (let i = 0; i < 100;i++){
+        port = startPort + i;
+        let canIUse = await canPortUsed({ port });
+        if (canIUse) {
+            break;
+        }
+    }
+    return port;
+}
+
 /** 登录账号 */
 export const login = async ({ account, id }) => {
     const { chromePath } = store.get('tools_setting_config', {});
@@ -54,16 +67,35 @@ export const login = async ({ account, id }) => {
             description: '未配置chrome地址'
         })
     };
+    const dataSource = store.get('tools_dataSource', []);
+
+    const port = await getPort();
     
-    startChromeProcess({ chromePath, url: 'www.zhihu.com', account });
+    startChromeProcess({ chromePath, url: 'www.zhihu.com', port, account });
 
     let client;
     let Page;
     let Network;
     try {
-        client = await chromeRemoteInterface();
+        client = await chromeRemoteInterface({ port });
         Page = client.Page;
         Network = client.Network;
+        Network.responseReceived((paramas) => {
+            const { type, response, frameId, requestId, loaderId } = paramas;
+            if (type === 'Fetch') {
+                const { url, status } = response || {};
+                if (url === 'https://www.zhihu.com/api/v3/oauth/sign_in' && status === 200) {
+                    const temDataSource = dataSource.map((item) => {
+                        if (item.id === id) {
+                            return { ...item, status: 10 }
+                        } else {
+                            return item
+                        }
+                    });
+                    store.set('tools_dataSource', temDataSource)
+                }
+            }
+        });
         await Network.enable();
         await Page.enable();
     } catch (error) {
@@ -96,8 +128,10 @@ export const testAccount = async ({ account, id }) => {
             return
        }
     }
+
+    const port = await getPort();
     
-    startChromeProcess({ chromePath, url: 'www.zhihu.com', account, }, { killSignal: 'SIGTERM', signal, }, callback);
+    startChromeProcess({ chromePath, url: 'www.zhihu.com', port, account, }, { killSignal: 'SIGTERM', signal, }, callback);
 
     let client;
     let Page;
@@ -158,18 +192,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
     const { chromePath, count, chat_interval, random, texts } = settingConfig;
     const { vpsName, vpsAccount, vpsPassword } = vpsConfig;
     
-    let startPort = 9222;
-    let port = 9222;
-    // TODO：优化循环完之后的提示
-    for (let i = 0; i < 50; i++) {
-        port = startPort + i;
-        let canIUse = await canPortUsed({ port });
-        if (canIUse) {
-            break;
-        }
-    }
-
-    console.log(port);
+    const port = await getPort();
 
     let childProcess;
 
@@ -344,9 +367,6 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
         }
         throw new Error(error);
     }
-
-
-
 }
 
 /** 专栏私信 */
@@ -629,7 +649,6 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
 
 /** 测试vps */
 export const testVps = async ({ vpsName, vpsAccount, vpsPassword }) => {
-
     const childProcessRasdialPromise = new Promise((res, rej) => {
         child_process.exec('Rasdial', { encoding: 'binary' }, (err, stdout, stderr) => {
             if (stdout) {
