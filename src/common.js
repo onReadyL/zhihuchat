@@ -13,6 +13,7 @@ export const child_process = window.require('child_process');
 
 export const chromeRemoteInterface = window.require('chrome-remote-interface');
 export const Version = window.require('chrome-remote-interface').Version;
+export const List = window.require('chrome-remote-interface').List;
 
 export const path = window.require('path');
 export const os = window.require('os');
