@@ -89,6 +89,13 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
                 </Radio.Group>
             </Form.Item>
             <Form.Item
+                label='多开'
+                name='mulOpen'
+                valuePropName="checked"
+            >
+                <Checkbox />
+            </Form.Item>
+            <Form.Item
                 name="random"
                 label="随机私信"
                 valuePropName="checked"
