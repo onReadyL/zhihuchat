@@ -86,6 +86,7 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
             >
                 <Radio.Group>
                     <Radio value={'vps'}>VPS拨号</Radio>
+                    <Radio value={'ip'}>代理IP</Radio>
                 </Radio.Group>
             </Form.Item>
             <Form.Item

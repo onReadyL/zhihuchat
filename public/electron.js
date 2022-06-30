@@ -30,7 +30,8 @@ const Hand = async () => {
       enableRemoteModule: true, //是否有子页面
       contextIsolation: false, //是否禁止node
       nodeIntegrationInSubFrames: true, //否允许在子页面(iframe)或子窗口(child window)中集成Node.js
-      preload: ''
+      preload: '',
+      webSecurity: !isDev
     },
   });
 
