@@ -7,13 +7,14 @@ const errorHandler = (error) => {
 
 const request = extend({ timeout: 15000, errorHandler });
 request.interceptors.request.use(async (url, options) => {
-    const headers = {
+    const { headers } = options;
+    const tempHeaders = {
         "X-Requested-With": "XMLHttpRequest",
-        'Content-Type': 'application/x-www-form-urlencoded',
+        ...headers
     };
     return {
         url,
-        options: {  ...options, headers, requestType: 'form', parseResponse: false },
+        options: {  ...options, headers: tempHeaders, parseResponse: false },
     };
 });
 

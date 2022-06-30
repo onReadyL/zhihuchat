@@ -3,7 +3,6 @@ import iconv from 'iconv-lite';
 
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer, List } from '../../common';
 import { chat_max_count } from '../../constants';
-import { request  } from '../utils/request'
 
 /** 启动chrome */
 const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => { }) => {
@@ -739,11 +738,27 @@ export const testVps = async ({ vpsName, vpsAccount, vpsPassword }) => {
 
 /** 测试ip */
 export const getIp = async ({ ipUrl, notice = false }) => {
-    return request(ipUrl, {
+    return fetch(ipUrl, {
         method: 'GET'
     }).then(res => {
-        return res.json();
+        return res.text();
     }).then(res => {
+        const reg = /(?:(?:25[0-5]|2[0-4]\d|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)/;
+        if (reg.test(res)) {
+            if (notice) {
+                notification.success({
+                    message: '获取ip成功'
+                });   
+            }
+            return res.split('\r\n')[0];
+        } else {
+            notification.warn({
+                message: '获取ip错误',
+                description: res
+            })
+            return false;
+        }
+
         const { code, data, msg, success } = res;
         // 111： 提取链接请求太过频繁，超出限制；113 白名单未添加/白名单掉了；114：账户金额消耗完毕；115：没有资源或没有符合条件的数据；116：套餐内IP数量消耗完毕
         // 117：检测本地白名单是不是在账户下；118：账户处于被禁用状态；121：套餐过期；401：白名单错误/使用的IP已经过期；403：客户目标网站异常，联系客服处理

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Form, Input, Space, Button, notification } from 'antd';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
@@ -6,7 +6,6 @@ import { connect } from 'react-redux';
 import { store } from "../../common";
 import { getIp } from "../utils/index";
 import { receiveData } from '../../action';
-
 
 const Index = ({ formProps, ipConfig, receiveData }) => {
     const [form] = Form.useForm();
