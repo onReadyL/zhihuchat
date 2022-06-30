@@ -3,6 +3,7 @@ import iconv from 'iconv-lite';
 
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer, List } from '../../common';
 import { chat_max_count } from '../../constants';
+import { request  } from '../utils/request'
 
 /** 启动chrome */
 const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => { }) => {
@@ -11,9 +12,9 @@ const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resP
     const userDataDir = parhArr.join('\\');
     let tempChildProcess;
     if (proxy) {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=888,768 --proxy-server=${proxy} ${resParams.join(' ')}`, options, callback); 
+        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768 --proxy-server="${proxy}" ${resParams.join(' ')}`, options, callback); 
     } else {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=888,768 ${resParams.join(' ')}`, options, callback);
+        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768 ${resParams.join(' ')}`, options, callback);
     }
     if (tempChildProcess) {
         tempChildProcess.on('error', () => {
@@ -186,11 +187,12 @@ export const testAccount = async ({ account, id }) => {
 }
 
 /** 开始 */
-export const begin = async (values, settingConfig, url, field, activeIndex, agentType, vpsConfig, vpsTest) => {
+export const begin = async (values, settingConfig, url, field, activeIndex, agentType, vpsConfig, ipConfig, vpsTest) => {
     const dataSource = store.get('tools_dataSource', []);
     const { account, agent = false, id } = values;
     const { chromePath, count, chat_interval, random, texts } = settingConfig;
     const { vpsName, vpsAccount, vpsPassword } = vpsConfig;
+    const { ipUrl } = ipConfig;
     
     const port = await getPort();
 
@@ -201,7 +203,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             if (!vpsName) {
                 notification.warn({
                     message: '操作错误',
-                    description: '未配置wps',
+                    description: '未配置vps',
                 })
                 throw new Error('未配置vps');
             }
@@ -250,7 +252,8 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             }
             
         } else if (agentType === 'ip') {
-            childProcess = startChromeProcess({ chromePath, url, port, account, proxy: '' }); 
+            const proxyIp = await getIp({ ipUrl });
+            childProcess = startChromeProcess({ chromePath, url, port, account, proxy: proxyIp }); 
         }
     } else {
         childProcess = startChromeProcess({ chromePath, url, port, account, });
@@ -286,7 +289,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             throw new Error('未登录');
         } else {
             const temDataSource = dataSource.map((item) => {
-                if (item.id === id) {
+                if (item.id === id && item.status === (1 || 2)) {
                     return { ...item, status: 10 }
                 } else {
                     return item
@@ -301,7 +304,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             const browser = await puppeteer.connect({
                 browserWSEndpoint: webSocketDebuggerUrl,
                 defaultViewport: {
-                    width: 1024,
+                    width: 900,
                     height: 768
                 },
             });
@@ -347,6 +350,21 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
             const [page1] = await browser.pages();
 
             await page1.content();
+            await waitFor(1000);
+            const isProxtErr = await page1.$eval('#error-information-popup-container .error-code', el => {
+                return el.innerText
+            }).then((res) => {
+                return res;
+            }).catch(err => {
+                return false
+            })
+            if (isProxtErr) {
+                notification.warn({
+                    message: '网络错误',
+                    description: '请检查代理服务器'
+                });
+                throw new Error('代理错误');
+            }
 
             // TODO: 等待页面加载完
             await waitFor(1000);
@@ -717,6 +735,34 @@ export const testVps = async ({ vpsName, vpsAccount, vpsPassword }) => {
     // 远程访问错误 651 调制解调器(或其他连接设备)报告了一个错误
     // 已连接
 
+}
+
+/** 测试ip */
+export const getIp = async ({ ipUrl, notice = false }) => {
+    return request(ipUrl, {
+        method: 'GET'
+    }).then(res => {
+        return res.json();
+    }).then(res => {
+        const { code, data, msg, success } = res;
+        // 111： 提取链接请求太过频繁，超出限制；113 白名单未添加/白名单掉了；114：账户金额消耗完毕；115：没有资源或没有符合条件的数据；116：套餐内IP数量消耗完毕
+        // 117：检测本地白名单是不是在账户下；118：账户处于被禁用状态；121：套餐过期；401：白名单错误/使用的IP已经过期；403：客户目标网站异常，联系客服处理
+        if (code === 0) {
+            const { city, expire_time, ip, isp, outip, port } = data[0] || {};
+            if (notice) {
+                notification.success({
+                    message: '获取ip成功'
+                })
+            }
+            return `${ip}:${port}`;
+        } else {
+            notification.warn({
+                message: '获取ip错误',
+                description: msg
+            })
+            return false;
+        }
+    })
 }
 
 /** 检查版本降低时，配置是否合法 */

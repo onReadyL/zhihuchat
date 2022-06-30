@@ -7,7 +7,7 @@ import { receiveData } from '../../action';
 import { store, waitFor } from '../../common';
 import { begin, verifyVersion } from '../utils';
 
-const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest, verify }) => {
+const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, selectedRows, vpsConfig, ipConfig, vpsTest, verify }) => {
     const [form] = Form.useForm();
 
     /** 配置 */
@@ -75,7 +75,7 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             const promiseArr = [];
             for (let i = 0; i < selectedData.length; i++){
                 i !== 0 && await waitFor(1000);
-                promiseArr.push(begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, vpsTest))
+                promiseArr.push(begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, ipConfig, vpsTest))
             }
             Promise.allSettled(promiseArr).then(res => {
                 setActiveKey();
@@ -83,7 +83,7 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
         } else {
             for (let i = 0; i < selectedData.length; i++){
                 try {
-                    await begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, vpsTest);
+                    await begin(selectedData[i], settingConfig, value, field, i , agentType, vpsConfig, ipConfig, vpsTest);
                 } catch (error) {
                     console.log(error);
                     break;

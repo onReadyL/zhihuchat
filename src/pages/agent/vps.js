@@ -1,10 +1,10 @@
 import React, { useState } from "react";
 import { Form, Input, Button, notification, Space } from 'antd';
-import { receiveData } from '../../action';
 import { bindActionCreators } from 'redux';
 import { connect } from 'react-redux';
 
 import { store } from "../../common";
+import { receiveData } from '../../action';
 import { testVps } from '../utils/index';
 
 const Index = ({ formProps, vpsConfig, receiveData }) => {
@@ -51,7 +51,6 @@ const Index = ({ formProps, vpsConfig, receiveData }) => {
             form={form}
             initialValues={vpsConfig}
             onFinish={handleFinish}
-            onFinishFailed={() => {}}
         >
             <Form.Item
                 label='名称'

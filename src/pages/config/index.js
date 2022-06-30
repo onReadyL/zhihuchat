@@ -16,6 +16,7 @@ const Config = ({
     funcConfig,
     selectedRows,
     vpsConfig,
+    ipConfig,
     vpsTest,
     verify,
 }) => {
@@ -48,7 +49,8 @@ const Config = ({
                         selectedRows: selectedRows.data,
                         vpsConfig: vpsConfig.data,
                         vpsTest: vpsTest.data,
-                        verify
+                        verify,
+                        ipConfig: ipConfig.data
                     }} />
                 </Card>
             </Col>
@@ -63,9 +65,10 @@ const mapStateToProps = (state) => {
         funcConfig = { data: store.get('tools_func_config', []) },
         selectedRows = { data: store.get('tools_dataSource_selected', []) },
         vpsConfig = { data: store.get('tools_vps_config', {}) },
-        vpsTest = { data: store.get('tools_vps_test', false ) }
+        vpsTest = { data: store.get('tools_vps_test', false) },
+        ipConfig = { data: store.get('tools_ip_config', {})}
     } = state.httpData;
-    return { loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest };
+    return { loading, settingConfig, funcConfig, selectedRows, vpsConfig, vpsTest, ipConfig };
   };
 const mapDispatchToProps = (dispatch) => ({
     receiveData: bindActionCreators(receiveData, dispatch),
