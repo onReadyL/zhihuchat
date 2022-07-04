@@ -174,7 +174,6 @@ export const testAccount = async ({ account, id }) => {
 
 /** 开始 */
 export const begin = async (values, settingConfig, url, field, activeIndex, agentType, vpsConfig, ipConfig, vpsTest) => {
-    const dataSource = store.get('tools_dataSource', []);
     const { account, agent = false, id } = values;
     const { count, chat_interval, random, texts } = settingConfig;
     const { vpsName, vpsAccount, vpsPassword } = vpsConfig;
@@ -264,6 +263,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
         const isLogined = await Network.getCookies({ urls: ['https://zhuanlan.zhihu.com/'] }).then(res => { 
             return res.cookies.filter(item => item.name === 'z_c0').length;
         });
+        const dataSource = store.get('tools_dataSource', []);
 
         if (!isLogined) {
             const temDataSource = dataSource.map((item) => {
