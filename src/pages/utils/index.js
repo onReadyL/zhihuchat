@@ -309,8 +309,9 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
                     });
 
                     await targetPage.on('response', async (res) => {
-                        const { _url, _status } = res;
-                        if (_url.indexOf('/api/v4/commercial/ecommerce') !== -1 && _status === 403) {
+                        const status = res.status();
+                        const url = res.url();
+                        if (url.indexOf('/api/v4/commercial/ecommerce') !== -1 && status === 403) {
                             const { error } = await res.json();
                             const { code } = error || {};
                             if (code === 4039) {
@@ -465,12 +466,13 @@ const zhuanlanChat = async ({ browser, page, count, interval, id, texts, random 
             const newPage = pages[1];
 
             newPage.on('response', async (res) => {
-                const { _url, _status } = res;
+                const url = res.url();
+                const status = res.status();
                 // 埋点
-                if (_url.indexOf('/api/v4/chat') !== -1 && _url.indexOf('sender_id') === -1) {
+                if (url.indexOf('/api/v4/chat') !== -1 && url.indexOf('sender_id') === -1) {
                     const { error } = await res.json();
                     const { code } = error || {};
-                    if (_status === 403) {
+                    if (status === 403) {
                         if (code === 40386) {
                             // 未回复
                         }
@@ -575,12 +577,13 @@ const followersChat = async ({ browser, page, count, interval, id, texts, random
         }
         const newPage = pages[1];
         newPage.on('response', async (res) => {
-            const { _url, _status } = res;
+            const url = res.url();
+            const status = res.status();
             // 埋点
-            if (_url.indexOf('/api/v4/chat') !== -1 && _url.indexOf('sender_id') === -1) {
+            if (url.indexOf('/api/v4/chat') !== -1 && url.indexOf('sender_id') === -1) {
                 const { error } = await res.json();
                 const { code } = error || {};
-                if (_status === 403) {
+                if (status === 403) {
                     if (code === 40386) {
                         // 未回复
                     }
