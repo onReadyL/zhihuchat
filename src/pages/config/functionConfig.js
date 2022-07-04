@@ -11,7 +11,7 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
     const [form] = Form.useForm();
 
     /** 配置 */
-    const { chromePath, count, chat_interval, random, texts, agentType, mulOpen } = settingConfig;
+    const { count, chat_interval, random, texts, agentType, mulOpen } = settingConfig;
 
     const [activeKey, setActiveKey] = useState();
 
@@ -46,13 +46,6 @@ const Index = ({ formProps, receiveData, loading, settingConfig, funcConfig, sel
             notification.warn({
                 message: '操作错误',
                 description: '请勾选数据'
-            });
-            return
-        };
-        if (!chromePath) {
-            notification.warn({
-                message: '配置错误',
-                description: '未配置chrome地址'
             });
             return
         };

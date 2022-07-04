@@ -2,18 +2,19 @@ import { notification } from 'antd';
 import iconv from 'iconv-lite';
 
 import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer, List } from '../../common';
-import { chat_max_count } from '../../constants';
+import { chat_max_count, chromePath } from '../../constants';
 
 /** 启动chrome */
-const startChromeProcess = ({ chromePath, url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => { }) => {
+const startChromeProcess = ({ url, port = 9222, account, proxy, resParams = [] }, options = {}, callback = () => { }) => {
     const parhArr = chromePath.split('\\');
     parhArr.splice(parhArr.length - 1, 1, 'userData', account);
     const userDataDir = parhArr.join('\\');
+    const commonCommand = `"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768`
     let tempChildProcess;
     if (proxy) {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768 --proxy-server="${proxy}" ${resParams.join(' ')}`, options, callback); 
+        tempChildProcess = child_process.exec(`${commonCommand} --proxy-server="${proxy}" ${resParams.join(' ')}`, options, callback); 
     } else {
-        tempChildProcess = child_process.exec(`"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768 ${resParams.join(' ')}`, options, callback);
+        tempChildProcess = child_process.exec(`${commonCommand} ${resParams.join(' ')}`, options, callback);
     }
     if (tempChildProcess) {
         tempChildProcess.on('error', () => {
@@ -60,18 +61,11 @@ const getPort = async (port = 9222) => {
 
 /** 登录账号 */
 export const login = async ({ account, id }) => {
-    const { chromePath } = store.get('tools_setting_config', {});
-    if (!chromePath) {
-        return notification.warn({
-            message: '配置错误',
-            description: '未配置chrome地址'
-        })
-    };
     const dataSource = store.get('tools_dataSource', []);
 
     const port = await getPort();
     
-    startChromeProcess({ chromePath, url: 'www.zhihu.com', port, account });
+    startChromeProcess({ url: 'www.zhihu.com', port, account });
 
     let client;
     let Page;
@@ -107,14 +101,7 @@ export const login = async ({ account, id }) => {
 
 /** 测试账号 */
 export const testAccount = async ({ account, id }) => {
-    const { chromePath } = store.get('tools_setting_config', {});
     const dataSource = store.get('tools_dataSource', []);
-    if (!chromePath) {
-        return notification.warn({
-            message: '配置错误',
-            description: '未配置chrome地址'
-        });
-    };
 
     const controller = new AbortController();
     const signal = controller.signal;
@@ -131,7 +118,7 @@ export const testAccount = async ({ account, id }) => {
 
     const port = await getPort();
     
-    startChromeProcess({ chromePath, url: 'www.zhihu.com', port, account, }, { killSignal: 'SIGTERM', signal, }, callback);
+    startChromeProcess({ url: 'www.zhihu.com', port, account, }, { killSignal: 'SIGTERM', signal, }, callback);
 
     let client;
     let Page;
@@ -189,7 +176,7 @@ export const testAccount = async ({ account, id }) => {
 export const begin = async (values, settingConfig, url, field, activeIndex, agentType, vpsConfig, ipConfig, vpsTest) => {
     const dataSource = store.get('tools_dataSource', []);
     const { account, agent = false, id } = values;
-    const { chromePath, count, chat_interval, random, texts } = settingConfig;
+    const { count, chat_interval, random, texts } = settingConfig;
     const { vpsName, vpsAccount, vpsPassword } = vpsConfig;
     const { ipUrl } = ipConfig;
     
@@ -247,22 +234,28 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
                     throw new Error('远程访问错误')
                 }
                 await waitFor(1000);
-                childProcess = startChromeProcess({ chromePath, url, port, account, });
+                childProcess = startChromeProcess({ url, port, account, });
             }
             
         } else if (agentType === 'ip') {
             const proxyIp = await getIp({ ipUrl });
-            childProcess = startChromeProcess({ chromePath, url, port, account, proxy: proxyIp }); 
+            childProcess = startChromeProcess({ url, port, account, proxy: proxyIp }); 
         }
     } else {
-        childProcess = startChromeProcess({ chromePath, url, port, account, });
+        childProcess = startChromeProcess({ url, port, account, });
     };
     let client;
     let Page;
     let Network;
 
     try {
-        client = await chromeRemoteInterface({ port });
+        client = await chromeRemoteInterface({ port }).catch(err => {
+            notification.warn({
+                message: '远程连接错误',
+                description: '请联系管理员或稍后重试'
+            });
+            throw new Error(err);
+        });
 
         Page = client.Page;
         Network = client.Network;
@@ -408,15 +401,15 @@ const zhuanlanChat = async ({ browser, page, count, interval, id, texts, random 
         console.log(err);
     });
 
-    const isListItems = await page.waitForSelector('.VoterList > .VoterList-content .List-item', { timeout: 10000 }).catch(res => { return false });
+    const isListItems = await page.waitForSelector('.VoterList > .VoterList-content .List-item', { timeout: 15000 }).catch(res => { return false });
     
     if (!isListItems) {
         notification.warn({
-            message: '系统错误',
-            description: '请联系管理员'
+            message: '网络错误',
+            description: '禁用代理或重试'
         });
         await browser.close();
-        throw new Error('系统错误');
+        throw new Error('网络错误');
     }
 
     const voterContent = await page.waitForSelector('.VoterList > .VoterList-content', { timeout: 3000 });

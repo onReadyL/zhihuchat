@@ -1,1 +1,0 @@
-export { default as FilePathCheck } from './filePathCheck/index';

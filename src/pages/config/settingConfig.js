@@ -6,7 +6,6 @@ import { connect } from 'react-redux';
 
 import { store } from '../../common';
 import { chat_max_count } from '../../constants/index';
-import { FilePathCheck } from '../../components';
 import { receiveData } from '../../action';
 
 import './settingConfig.css';
@@ -32,20 +31,7 @@ const Index = ({ formProps, receiveData, settingConfig }) => {
                 initialValues: settingConfig,
                 onFinish: handleFinish
             }}
-        >
-            <Form.Item
-                label="chrome"
-                name='chromePath'
-                rules={[
-                    {
-                        whitespace: true,
-                        required: true,
-                        message: '必填'
-                    },
-                ]}
-            >
-                <FilePathCheck  />
-            </Form.Item>                       
+        >                       
             <Form.Item
                 name="count"
                 label="私信条数"
