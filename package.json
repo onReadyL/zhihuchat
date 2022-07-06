@@ -7,15 +7,15 @@
   "description": "zhihu chat",
   "author": "lxb",
   "devDependencies": {
+    "babel-plugin-import": "^1.13.3",
     "concurrently": "^5.3.0",
     "cross-env": "^7.0.3",
+    "customize-cra": "^1.0.0",
     "electron": "11.2.2",
     "electron-builder": "^22.9.1",
     "http-proxy-middleware": "^2.0.6",
     "nodemon": "^2.0.7",
-    "wait-on": "^5.2.1",
-    "customize-cra": "^1.0.0",
-    "babel-plugin-import": "^1.13.3"
+    "wait-on": "^5.2.1"
   },
   "dependencies": {
     "antd": "^4.21.3",

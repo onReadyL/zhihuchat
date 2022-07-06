@@ -9,7 +9,7 @@ const startChromeProcess = ({ url, port = 9222, account, proxy, resParams = [] }
     const parhArr = chromePath.split('\\');
     parhArr.splice(parhArr.length - 1, 1, 'userData', account);
     const userDataDir = parhArr.join('\\');
-    const commonCommand = `"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768`
+    const commonCommand = `"${chromePath}" ${url} --remote-debugging-port=${port} --user-data-dir=${userDataDir} --window-size=900,768 --disable-backgrounding-occluded-windows --disable-features=CalculateNativeWinOcclusion --disable-background-timer-throttling --disable-renderer-backgrounding`
     let tempChildProcess;
     if (proxy) {
         tempChildProcess = child_process.exec(`${commonCommand} --proxy-server="${proxy}" ${resParams.join(' ')}`, options, callback); 
