@@ -87,6 +87,7 @@ const APP = ({ lock, receiveData }) => {
             {process.env.NODE_ENV === "development" && (
               <CodeOutlined onClick={opendevtool} title="控制台" />
             )}
+            <div>版本：v{require("../package.json").version}</div>
           </Space>
         </Layout.Footer>
       </Layout>)
