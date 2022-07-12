@@ -1,7 +1,7 @@
 import { notification } from 'antd';
 import iconv from 'iconv-lite';
 
-import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer, List } from '../../common';
+import { store, child_process, chromeRemoteInterface, waitFor, Version, puppeteer } from '../../common';
 import { chat_max_count, chromePath } from '../../constants';
 
 /** 启动chrome */
@@ -301,6 +301,7 @@ export const begin = async (values, settingConfig, url, field, activeIndex, agen
                 },
             });
 
+            // 新页面创建时，给页面添加接口响应监听
             await browser.on('targetcreated', async (target) => {
                 let targetPage = await target.page();
                 if (targetPage) {
