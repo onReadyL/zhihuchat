@@ -24,6 +24,7 @@ const Index = ({ formProps, ipConfig, receiveData }) => {
     const handleTest = async () => {
         setTesting(true);
         const ip = await getIp({ ipUrl, notice: true });
+        debugger
         setTesting(false);
     }
 

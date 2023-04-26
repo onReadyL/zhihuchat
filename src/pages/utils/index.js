@@ -62,10 +62,12 @@ const getPort = async (port = 9222) => {
 /** 登录账号 */
 export const login = async ({ account, id }) => {
     const dataSource = store.get('tools_dataSource', []);
-
+    const ipConfig = store.get('tools_ip_config', {});
+    const { ipUrl } = ipConfig;
     const port = await getPort();
-    
-    startChromeProcess({ url: 'www.zhihu.com', port, account });
+    const proxyIp = await getIp({ ipUrl });
+    debugger
+    startChromeProcess({ url: 'www.zhihu.com', port, account, proxy: proxyIp });
 
     let client;
     let Page;
@@ -738,6 +740,12 @@ export const getIp = async ({ ipUrl, notice = false }) => {
     return fetch(ipUrl, {
         method: 'GET'
     }).then(res => {
+        // try {
+        //     const json = res.json();
+        // } catch (error) {
+            
+        // }
+        
         return res.text();
     }).then(res => {
         const reg = /(?:(?:25[0-5]|2[0-4]\d|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4]\d|[01]?\d\d?)/;
